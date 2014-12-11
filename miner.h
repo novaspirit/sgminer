@@ -1013,6 +1013,7 @@ extern bool opt_protocol;
 extern bool have_longpoll;
 extern char *opt_kernel_path;
 extern char *opt_socks_proxy;
+extern bool opt_lyra;
 
 #if defined(unix) || defined(__APPLE__)
     extern char *opt_stderr_cmd;

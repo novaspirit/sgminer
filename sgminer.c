@@ -48,6 +48,7 @@ char *curly = ":D";
 #endif
 #include <libgen.h>
 #include "sph/sph_sha2.h"
+#include "sph/sph_blake.h"
 
 #include "compat.h"
 #include "miner.h"
@@ -1921,6 +1922,7 @@ static void calc_midstate(struct work *work)
   memcpy(work->midstate, ctx.val, 32);
   endian_flip32(work->midstate, work->midstate);
 }
+
 
 static struct work *make_work(void)
 {

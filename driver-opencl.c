@@ -49,6 +49,7 @@ extern bool opt_loginput;
 extern char *opt_kernel_path;
 extern int gpur_thr_id;
 extern bool opt_noadl;
+extern bool opt_lyra;
 
 extern void *miner_thread(void *userdata);
 extern int dev_from_id(int thr_id);
@@ -1357,7 +1358,12 @@ static bool opencl_thread_init(struct thr_info *thr)
 
 static bool opencl_prepare_work(struct thr_info __maybe_unused *thr, struct work *work)
 {
-  work->blk.work = work;
+
+  if (opt_lyra) {
+	  work->blk.work = work;
+	  precalc_hash_blake256(&work->blk, 0, (uint32_t *)(work->data));
+  }
+  else {work->blk.work = work;}
   thr->pool_no = work->pool->pool_no;
   return true;
 }
