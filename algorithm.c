@@ -753,7 +753,7 @@ static algorithm_settings_t algos[] = {
 
   { "fresh", ALGO_FRESH, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4, 4 * 16 * 4194304, 0, fresh_regenhash, queue_fresh_kernel, gen_hash, NULL},
 
-  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 64, 64, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2re_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
+  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 1, 1, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2re_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
 
   // kernels starting from this will have difficulty calculated by using fuguecoin algorithm
 #define A_FUGUE(a, b, c) \
