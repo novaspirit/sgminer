@@ -68,9 +68,7 @@ __constant static const sph_u64 t12[6] =
 0xff00000000000000UL,
 0xff00000000000008UL
 };
-static inline ulong ROTL64(const ulong v, const ulong n){
-	return rotate(v,n); 
-}
+
 
 #define Round512(p0,p1,p2,p3,p4,p5,p6,p7,ROT)  { \
 p0 += p1; p1 = SPH_ROTL64(p1, ROT256[ROT][0]);  p1 ^= p0; \

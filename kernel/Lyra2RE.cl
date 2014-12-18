@@ -70,7 +70,56 @@ typedef long sph_s64;
 #define SPH_ROTL32(x,n) rotate(x,(uint)n)     //faster with driver 14.6
 #define SPH_ROTR32(x,n) rotate(x,(uint)(32-n))
 #define SPH_ROTL64(x,n) rotate(x,(ulong)n)
-#define SPH_ROTR64(x,n) rotate(x,(ulong)(64-n))
+//#define SPH_ROTR64(x,n) rotate(x,(ulong)(64-n))
+
+/*
+inline ulong rol64 (ulong l,ulong n) 
+{ 
+if (n<=32) {
+uint2 t = rotate(as_uint2(l), (n)); 
+return as_ulong((uint2)(bitselect(t.s0, t.s1, (uint)(1 << (n)) - 1), bitselect(t.s0, t.s1, (uint)(~((1 << (n)) - 1))))); }
+else {
+uint2 t = rotate(as_uint2(l), (n - 32)); 
+return as_ulong((uint2)(bitselect(t.s1, t.s0, (uint)(1 << (n - 32)) - 1), bitselect(t.s1, t.s0, (uint)(~((1 << (n - 32)) - 1))))); 
+}}
+*/
+
+
+/*
+static inline ulong rol64(const ulong vw, unsigned n) {
+	uint2 result;
+    uint2 v=as_uint2(vw);
+    if (n == 32) { return as_ulong((uint2)(v.y,v.x)); }
+	if (n < 32) {
+		result.y = ( (v.y << (n)) | (v.x >> (32 - n)) );
+		result.x = ( (v.x << (n)) | (v.y >> (32 - n)) );
+	}
+	else {
+		result.y = ( (v.x << (n - 32)) | (v.y >> (64 - n)) );
+		result.x = ( (v.y << (n - 32)) | (v.x >> (64 - n)) );
+	}
+	return as_ulong(result);
+}
+*/
+
+static inline sph_u64 ror64(sph_u64 vw, unsigned a) {
+	uint2 result;
+	uint2 v = as_uint2(vw);
+	unsigned n = (unsigned)(64 - a);
+	if (n == 32) { return as_ulong((uint2)(v.y,v.x)); }
+	if (n < 32) {
+		result.y = ((v.y << (n)) | (v.x >> (32 - n)));
+		result.x = ((v.x << (n)) | (v.y >> (32 - n)));
+	}
+	else {
+		result.y = ((v.x << (n - 32)) | (v.y >> (64 - n)));
+		result.x = ((v.y << (n - 32)) | (v.x >> (64 - n)));
+	}
+	return as_ulong(result);
+}
+
+#define SPH_ROTR64(l,n) ror64(l,n)
+
 
 
 #include "blake256.cl"
@@ -170,7 +219,7 @@ h[7]=h7;
 
 for (int i=0;i<8;i++) {hash->h4[i]=SWAP4(h[i]);}
 
- barrier(CLK_GLOBAL_MEM_FENCE);
+barrier(CLK_LOCAL_MEM_FENCE);
 
 }
 
@@ -194,8 +243,8 @@ __kernel void search1(__global hash_t* hashes)
 
 		keccak_block(keccak_gpu_state);
 		for (int i = 0; i<4; i++) { hash->h8[i] = keccak_gpu_state[i]; }
+barrier(CLK_LOCAL_MEM_FENCE);
 
-  barrier(CLK_GLOBAL_MEM_FENCE);
 
 
 }
@@ -211,18 +260,18 @@ __kernel void search2(__global hash_t* hashes)
 
 
 
-  sph_u64 state[16];
+  uint2 state[16];
 
-  for (int i = 0; i<4; i++) { state[i] = hash->h8[i];} //password
+  for (int i = 0; i<4; i++) { state[i] = as_uint2(hash->h8[i]);} //password
   for (int i = 0; i<4; i++) { state[i + 4] = state[i]; } //salt 
 
-  for (int i = 0; i<8; i++) { state[i + 8] = blake2b_IV[i]; }
+  for (int i = 0; i<8; i++) { state[i + 8] = as_uint2(blake2b_IV[i]); }
 
   //     blake2blyra x2 
 
   for (int i = 0; i<24; i++) { round_lyra(state); } //because 12 is not enough
 
-  sph_u64 Matrix[96][8]; // very uncool
+  __private uint2 Matrix[96][8]; // very uncool
   /// reducedSqueezeRow0
 
   for (int i = 0; i < 8; i++)
@@ -248,30 +297,31 @@ __kernel void search2(__global hash_t* hashes)
   reduceDuplexRowSetup(5, 2, 6);
   reduceDuplexRowSetup(6, 1, 7);
 
-  sph_u64 rowa;
-  rowa = state[0] & 7;
+  sph_u32 rowa;
+  rowa = state[0].x & 7;
 
   reduceDuplexRow(7, rowa, 0);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(0, rowa, 3);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(3, rowa, 6);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(6, rowa, 1);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(1, rowa, 4);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(4, rowa, 7);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(7, rowa, 2);
-  rowa = state[0] & 7;
+  rowa = state[0].x & 7;
   reduceDuplexRow(2, rowa, 5);
 
   absorbblock(rowa);
 
-  for (int i = 0; i<4; i++) {hash->h8[i] = state[i];} 
+  for (int i = 0; i<4; i++) {hash->h8[i] = as_ulong(state[i]);} 
+barrier(CLK_LOCAL_MEM_FENCE);
 
-  barrier(CLK_GLOBAL_MEM_FENCE);
+  
 
 }
 
@@ -344,44 +394,99 @@ __kernel void search3(__global hash_t* hashes)
 		hash->h8[1]      = p1;
 		hash->h8[2]      = p2;
 		hash->h8[3]      = p3;
-	
-
-
-  barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 
 }
 
 __attribute__((reqd_work_group_size(WORKSIZE, 1, 1)))
-__kernel void search4(__global hash_t* hashes, __global uint* output, const uint target)
+__kernel void search4(__global hash_t* hashes, __global uint* output, const ulong target)
 {
+// __local ulong T0[256], T1[256], T2[256], T3[256], T4[256], T5[256], T6[256], T7[256];
+   // uint u   = get_local_id(0);
+/*
+for (uint u = get_local_id(0); u < 256; u += get_local_size(0)) {
+	
+  
+  T0[u] = T0_G[u];
+  T1[u] = T1_G[u];
+  T2[u] = T2_G[u];
+  T3[u] = T3_G[u];
+  T4[u] = T4_G[u];
+  T5[u] = T5_G[u];
+  T6[u] = T6_G[u];
+  T7[u] = T7_G[u];
+ }
+barrier(CLK_LOCAL_MEM_FENCE);
+
+  T1[u] = SPH_ROTL64(T0[u], 8UL);
+  T2[u] = SPH_ROTL64(T0[u], 16UL);
+  T3[u] = SPH_ROTL64(T0[u], 24UL);
+  T4[u] = SPH_ROTL64(T0[u], 32UL);
+  T5[u] = SPH_ROTL64(T0[u], 40UL);
+  T6[u] = SPH_ROTL64(T0[u], 48UL);
+  T7[u] = SPH_ROTL64(T0[u], 56UL);
+  
+*/
 	uint gid = get_global_id(0);
+
 	__global hash_t *hash = &(hashes[gid - get_global_offset(0)]);
 
-	sph_u64 message[8], state[8];
-	sph_u64 t[8];
-	for (int k = 0; k<4; k++) { message[k] = hash->h8[k]; }
+
+
+    __private ulong message[8], state[8];
+	__private ulong t[8];
+
+    
+	for (int u = 0; u<4; u++) { message[u] = hash->h8[u]; }
 
 	message[4] = 0x80UL;
 	message[5] = 0UL;
 	message[6] = 0UL; 
 	message[7] = 0x0100000000000000UL;
 
+    
 	for (int u = 0; u<8; u++) { state[u] = message[u]; }
 	state[7] ^= 0x0001000000000000UL;
 
-	PERM_SMALL_P(state);
+
+   
+	for (int r = 0; r < 10; r ++) {ROUND_SMALL_P(state, r); }		
+
 	state[7] ^= 0x0001000000000000UL;
-	PERM_SMALL_Q(message);
+
+   
+	for (int r = 0; r < 10; r ++) {ROUND_SMALL_Q(message, r); }		
+
 
 	for (int u = 0; u<8; u++) { state[u] ^= message[u]; }
 	message[7] = state[7];
 
-	PERM_SMALL_Pf(state);
+	for (int r = 0; r < 9; r ++) {ROUND_SMALL_P(state, r); }		
+    uchar8 State;
+	State.s0 =as_uchar8(state[7]^0x79).s0;
+	State.s1 =as_uchar8(state[0]^0x09).s1;
+	State.s2 =as_uchar8(state[1]^0x19).s2;
+	State.s3 =as_uchar8(state[2]^0x29).s3;
+	State.s4 =as_uchar8(state[3]^0x39).s4;
+	State.s5 =as_uchar8(state[4]^0x49).s5;
+	State.s6 =as_uchar8(state[5]^0x59).s6;
+	State.s7 =as_uchar8(state[6]^0x69).s7;
 
-	state[7] ^= message[7];
-	barrier(CLK_GLOBAL_MEM_FENCE);
+   
+		state[7] =T0_G[State.s0] 
+			^ R64(T0_G[State.s1],  8) 
+			^ R64(T0_G[State.s2], 16) 
+			^ R64(T0_G[State.s3], 24) 
+			^     T4_G[State.s4] 
+			^ R64(T4_G[State.s5],  8) 
+			^ R64(T4_G[State.s6], 16) 
+			^ R64(T4_G[State.s7], 24) ^message[7]; 		
 
-	bool result = ( as_uint2(state[7]).y <= target);
+//	t[7] ^= message[7];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+
+	bool result = ( state[7] <= target);
 	if (result) {
 		output[atomic_inc(output + 0xFF)] = SWAP4(gid);
 	}
