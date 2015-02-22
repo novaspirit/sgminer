@@ -32,6 +32,7 @@
 #include "algorithm/whirlcoin.h"
 #include "algorithm/neoscrypt.h"
 #include "algorithm/Lyra2RE.h"
+#include "algorithm/pluck.h"
 
 #include "compat.h"
 
@@ -54,7 +55,8 @@ const char *algorithm_type_str[] = {
   "Fresh",
   "Whirlcoin",
   "Neoscrypt",
-  "Lyra2RE"
+  "Lyra2RE",
+  "pluck"
 };
 
 void sha256(const unsigned char *message, unsigned int len, unsigned char *digest)
@@ -179,6 +181,29 @@ static cl_int queue_neoscrypt_kernel(_clState *clState, dev_blk_ctx *blk, __mayb
 
   return status;
 }
+
+static cl_int queue_pluck_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_unused cl_uint threads)
+{
+	cl_kernel *kernel = &clState->kernel;
+	unsigned int num = 0;
+	cl_uint le_target;
+	cl_int status = 0;
+
+	
+//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
+	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
+//	memcpy(clState->cldata, blk->work->data, 80);
+	flip80(clState->cldata, blk->work->data);
+	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
+
+	CL_SET_ARG(clState->CLbuffer0);
+	CL_SET_ARG(clState->outputBuffer);
+	CL_SET_ARG(clState->padbuffer8);
+	CL_SET_ARG(le_target);
+
+	return status;
+}
+
 
 static cl_int queue_maxcoin_kernel(struct __clState *clState, struct _dev_blk_ctx *blk, __maybe_unused cl_uint threads)
 {
@@ -717,6 +742,12 @@ static algorithm_settings_t algos[] = {
   A_NEOSCRYPT("neoscrypt"),
 #undef A_NEOSCRYPT
 
+#define A_PLUCK(a) \
+            { a, ALGO_PLUCK, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 0, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, pluck_regenhash, queue_pluck_kernel, gen_hash, append_neoscrypt_compiler_options}
+  A_PLUCK("pluck"),
+#undef A_PLUCK
+
+
   // kernels starting from this will have difficulty calculated by using quarkcoin algorithm
 #define A_QUARK(a, b) \
     { a, ALGO_QUARK, "", 256, 256, 256, 0, 0, 0xFF, 0xFFFFFFULL, 0x0000ffffUL, 0, 0, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, b, queue_sph_kernel, gen_hash, append_x11_compiler_options}
@@ -753,7 +784,7 @@ static algorithm_settings_t algos[] = {
 
   { "fresh", ALGO_FRESH, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4, 4 * 16 * 4194304, 0, fresh_regenhash, queue_fresh_kernel, gen_hash, NULL},
 
-  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 128, 128, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2re_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
+  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2re_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
 
   // kernels starting from this will have difficulty calculated by using fuguecoin algorithm
 #define A_FUGUE(a, b, c) \

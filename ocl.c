@@ -35,6 +35,7 @@
 #include "ocl/build_kernel.h"
 #include "ocl/binary_kernel.h"
 #include "algorithm/neoscrypt.h"
+#include "algorithm/pluck.h"
 
 /* FIXME: only here for global config vars, replace with configuration.h
  * or similar as soon as config is in a struct instead of littered all
@@ -429,7 +430,92 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 
     applog(LOG_DEBUG, "GPU %d: computing max. global thread count to %u", gpu, (unsigned)(cgpu->thread_concurrency));
 
-  } else if (!cgpu->opt_tc) {
+  } 
+/////////////////////////////////// pluck 
+  // neoscrypt TC
+  else if (!safe_cmp(cgpu->algorithm.name, "pluck") && !cgpu->opt_tc) {
+	  size_t glob_thread_count;
+	  long max_int;
+	  unsigned char type = 0;
+
+	  // determine which intensity type to use
+	  if (cgpu->rawintensity > 0) {
+		  glob_thread_count = cgpu->rawintensity;
+		  max_int = glob_thread_count;
+		  type = 2;
+	  }
+	  else if (cgpu->xintensity > 0) {
+		  glob_thread_count = clState->compute_shaders * ((cgpu->algorithm.xintensity_shift) ? (1UL << (cgpu->algorithm.xintensity_shift + cgpu->xintensity)) : cgpu->xintensity);
+		  max_int = cgpu->xintensity;
+		  type = 1;
+	  }
+	  else {
+		  glob_thread_count = 1UL << (cgpu->algorithm.intensity_shift + cgpu->intensity);
+		  max_int = ((cgpu->dynamic) ? MAX_INTENSITY : cgpu->intensity);
+	  }
+
+	  glob_thread_count = ((glob_thread_count < cgpu->work_size) ? cgpu->work_size : glob_thread_count);
+
+	  // if TC * scratchbuf size is too big for memory... reduce to max
+	  if ((glob_thread_count * PLUCK_SCRATCHBUF_SIZE) >= (uint64_t)cgpu->max_alloc) {
+
+		  /* Selected intensity will not run on this GPU. Not enough memory.
+		  * Adapt the memory setting. */
+		  // depending on intensity type used, reduce the intensity until it fits into the GPU max_alloc
+		  switch (type) {
+			  //raw intensity
+		  case 2:
+			  while ((glob_thread_count * PLUCK_SCRATCHBUF_SIZE) > (uint64_t)cgpu->max_alloc) {
+				  --glob_thread_count;
+			  }
+
+			  max_int = glob_thread_count;
+			  cgpu->rawintensity = glob_thread_count;
+			  break;
+
+			  //x intensity
+		  case 1:
+			  glob_thread_count = cgpu->max_alloc / PLUCK_SCRATCHBUF_SIZE;
+			  max_int = glob_thread_count / clState->compute_shaders;
+
+			  while (max_int && ((clState->compute_shaders * (1UL << max_int)) > glob_thread_count)) {
+				  --max_int;
+			  }
+
+			  /* Check if max_intensity is >0. */
+			  if (max_int < MIN_XINTENSITY) {
+				  applog(LOG_ERR, "GPU %d: Max xintensity is below minimum.", gpu);
+				  max_int = MIN_XINTENSITY;
+			  }
+
+			  cgpu->xintensity = max_int;
+			  glob_thread_count = clState->compute_shaders * (1UL << max_int);
+			  break;
+
+		  default:
+			  glob_thread_count = cgpu->max_alloc / PLUCK_SCRATCHBUF_SIZE;
+			  while (max_int && ((1UL << max_int) & glob_thread_count) == 0) {
+				  --max_int;
+			  }
+
+			  /* Check if max_intensity is >0. */
+			  if (max_int < MIN_INTENSITY) {
+				  applog(LOG_ERR, "GPU %d: Max intensity is below minimum.", gpu);
+				  max_int = MIN_INTENSITY;
+			  }
+
+			  cgpu->intensity = max_int;
+			  glob_thread_count = 1UL << max_int;
+			  break;
+		  }
+	  }
+
+	  // TC is glob thread count
+	  cgpu->thread_concurrency = glob_thread_count;
+
+	  applog(LOG_DEBUG, "GPU %d: computing max. global thread count to %u", gpu, (unsigned)(cgpu->thread_concurrency));
+
+ } else if (!cgpu->opt_tc) {
     unsigned int sixtyfours;
 
     sixtyfours =  cgpu->max_alloc / 131072 / 64 / (algorithm->n/1024) - 1;
@@ -546,7 +632,19 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 
       applog(LOG_DEBUG, "Neoscrypt buffer sizes: %lu RW, %lu R", (unsigned long)bufsize, (unsigned long)readbufsize);
     // scrypt/n-scrypt
-    } else {
+    } 
+	else if (!safe_cmp(algorithm->name, "pluck")) {
+		/* The scratch/pad-buffer needs 32kBytes memory per thread. */
+		bufsize = PLUCK_SCRATCHBUF_SIZE * cgpu->thread_concurrency;
+
+		/* This is the input buffer. For pluck this is guaranteed to be
+		* 80 bytes only. */
+		readbufsize = 80;
+
+		applog(LOG_DEBUG, "pluck buffer sizes: %lu RW, %lu R", (unsigned long)bufsize, (unsigned long)readbufsize);
+		// scrypt/n-scrypt
+	}
+     else {
       size_t ipt = (algorithm->n / cgpu->lookup_gap + (algorithm->n % cgpu->lookup_gap > 0));
       bufsize = 128 * ipt * cgpu->thread_concurrency;
       applog(LOG_DEBUG, "Scrypt buffer sizes: %lu RW, %lu R", (unsigned long)bufsize, (unsigned long)readbufsize);
