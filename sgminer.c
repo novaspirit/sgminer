@@ -7081,7 +7081,8 @@ bool test_nonce(struct work *work, uint32_t nonce)
   rebuild_nonce(work, nonce);
 
   // for Neoscrypt, the diff1targ value is in work->target
-  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt") || !safe_cmp(work->pool->algorithm.name, "pluck")) {
+  if (!safe_cmp(work->pool->algorithm.name, "neoscrypt") || !safe_cmp(work->pool->algorithm.name, "pluck")
+	  || !safe_cmp(work->pool->algorithm.name, "yescrypt") ) {
     diff1targ = ((uint32_t *)work->target)[7];
   }
   else {
@@ -8725,7 +8726,8 @@ int main(int argc, char *argv[])
 #endif
 
   /* Default algorithm specified in algorithm.c ATM */
-  set_algorithm(&default_profile.algorithm, "scrypt");
+  /* changed to x11 which won't cause crash*/
+  set_algorithm(&default_profile.algorithm, "x11");
 
   devcursor = 8;
   logstart = devcursor + 1;

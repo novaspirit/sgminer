@@ -70,6 +70,7 @@ sgminer_SOURCES += algorithm/whirlcoin.c algorithm/whirlcoin.h
 sgminer_SOURCES += algorithm/neoscrypt.c algorithm/neoscrypt.h
 sgminer_SOURCES += algorithm/pluck.c algorithm/pluck.h
 sgminer_SOURCES += algorithm/Lyra2RE.c algorithm/Lyra2RE.h algorithm/Lyra2.c algorithm/Lyra2.h algorithm/Sponge.c algorithm/Sponge.h
+sgminer_SOURCES += algorithm/yescrypt.h algorithm/yescrypt.c algorithm/yescrypt_core.h algorithm/yescrypt-opt.c algorithm/yescryptcommon.c algorithm/sysendian.h 
 
 bin_SCRIPTS	= $(top_srcdir)/kernel/*.cl
 

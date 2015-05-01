@@ -1136,8 +1136,8 @@ extern bool add_pool_details(struct pool *pool, bool live, char *url, char *user
 #define MAX_GPUDEVICES 16
 #define MAX_DEVICES 4096
 
-#define MIN_INTENSITY 8
-#define MIN_INTENSITY_STR "8"
+#define MIN_INTENSITY 4
+#define MIN_INTENSITY_STR "4"
 #define MAX_INTENSITY 31
 #define MAX_INTENSITY_STR "31"
 #define MIN_XINTENSITY 1

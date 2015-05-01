@@ -27,7 +27,8 @@ typedef enum {
   ALGO_WHIRL,
   ALGO_NEOSCRYPT,
   ALGO_LYRA2RE,
-  ALGO_PLUCK
+  ALGO_PLUCK,
+  ALGO_YESCRYPT
 } algorithm_type_t;
 
 extern const char *algorithm_type_str[];

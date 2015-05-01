@@ -33,6 +33,7 @@
 #include "algorithm/neoscrypt.h"
 #include "algorithm/Lyra2RE.h"
 #include "algorithm/pluck.h"
+#include "algorithm/yescrypt.h"
 
 #include "compat.h"
 
@@ -56,7 +57,8 @@ const char *algorithm_type_str[] = {
   "Whirlcoin",
   "Neoscrypt",
   "Lyra2RE",
-  "pluck"
+  "pluck",
+  "yescrypt"
 };
 
 void sha256(const unsigned char *message, unsigned int len, unsigned char *digest)
@@ -204,6 +206,71 @@ static cl_int queue_pluck_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_un
 	return status;
 }
 
+
+static cl_int queue_yescrypt_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_unused cl_uint threads)
+{
+	cl_kernel *kernel = &clState->kernel;
+	unsigned int num = 0;
+	cl_uint le_target;
+	cl_int status = 0;
+
+
+	//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
+	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
+	//	memcpy(clState->cldata, blk->work->data, 80);
+	flip80(clState->cldata, blk->work->data);
+	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
+
+	CL_SET_ARG(clState->CLbuffer0);
+	CL_SET_ARG(clState->outputBuffer);
+	CL_SET_ARG(clState->padbuffer8);
+	CL_SET_ARG(clState->buffer1);
+	CL_SET_ARG(le_target);
+
+	return status;
+}
+
+static cl_int queue_yescrypt_multikernel(_clState *clState, dev_blk_ctx *blk, __maybe_unused cl_uint threads)
+{
+//	cl_kernel *kernel = &clState->kernel;
+	cl_kernel *kernel;
+	unsigned int num = 0;
+	cl_uint le_target;
+	cl_int status = 0;
+
+
+	//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
+	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
+	//	memcpy(clState->cldata, blk->work->data, 80);
+	flip80(clState->cldata, blk->work->data);
+	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
+//pbkdf and initial sha
+	kernel = &clState->kernel;
+	CL_SET_ARG_0(clState->CLbuffer0);
+	CL_SET_ARG(clState->buffer2);
+	CL_SET_ARG(clState->buffer3);
+//mix1_1 (salsa)
+	num = 0;
+	kernel = clState->extra_kernels;
+	CL_SET_ARG_0(clState->buffer1);
+	CL_SET_ARG(clState->buffer2);
+//mix1_2/2_2 (pwxform)
+	CL_NEXTKERNEL_SET_ARG_0(clState->padbuffer8);
+	CL_SET_ARG(clState->buffer1);
+	CL_SET_ARG(clState->buffer2);
+//mix2_2
+//	CL_NEXTKERNEL_SET_ARG_0(clState->padbuffer8);
+//	CL_SET_ARG(clState->buffer1);
+//	CL_SET_ARG(clState->buffer2);
+//pbkdf and finalization
+	CL_NEXTKERNEL_SET_ARG_0(clState->CLbuffer0);
+	CL_SET_ARG(clState->outputBuffer);
+	CL_SET_ARG(clState->buffer2);
+	CL_SET_ARG(clState->buffer3);
+    CL_SET_ARG(le_target);
+
+	return status;
+}
 
 static cl_int queue_maxcoin_kernel(struct __clState *clState, struct _dev_blk_ctx *blk, __maybe_unused cl_uint threads)
 {
@@ -746,6 +813,16 @@ static algorithm_settings_t algos[] = {
             { a, ALGO_PLUCK, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 0, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, pluck_regenhash, queue_pluck_kernel, gen_hash, append_neoscrypt_compiler_options}
   A_PLUCK("pluck"),
 #undef A_PLUCK
+
+#define A_YESCRYPT(a) \
+              { a, ALGO_YESCRYPT, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 0, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, yescrypt_regenhash, queue_yescrypt_kernel, gen_hash, append_neoscrypt_compiler_options}
+  A_YESCRYPT("yescrypt"),
+#undef A_YESCRYPT
+
+//#define A_YESCRYPT(a) \
+//                  { a, ALGO_YESCRYPT, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 3, -1,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE , yescrypt_regenhash, queue_yescrypt_multikernel, gen_hash, append_neoscrypt_compiler_options}
+//  A_YESCRYPT("yescrypt"),
+//#undef A_YESCRYPT
 
 
   // kernels starting from this will have difficulty calculated by using quarkcoin algorithm

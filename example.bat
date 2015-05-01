@@ -1,9 +1,12 @@
-setx GPU_FORCE_64BIT_PTR 0
-setx GPU_MAX_HEAP_SIZE 100
-setx GPU_USE_SYNC_OBJECTS 1
-setx GPU_MAX_ALLOC_PERCENT 100
+rem setx GPU_MAX_HEAP_SIZE 100
+rem setx GPU_USE_SYNC_OBJECTS 1
+rem setx GPU_MAX_ALLOC_PERCENT 100
 del *.bin
 
-sgminer.exe --no-submit-stale --kernel Lyra2RE -o stratum+tcp://92.27.201.170:9174 -u m -p 1 --gpu-platform 2 -I 19 --shaders 2816  -w 64 -g 2 
+@rem sgminer.exe --no-submit-stale --kernel Lyra2RE -o stratum+tcp://pool.verters.com:4444 -u djm34t.user -p password --gpu-platform 2 
+@rem sgminer.exe --no-submit-stale --kernel pluck -o stratum+tcp://sup.suprnova.cc:7777  -u djm34.2 -p password   --gpu-platform 2 --thread-concurrency 8192 -w 4  -I 12
+@rem sgminer.exe --no-submit-stale --kernel yescrypt -o stratum+tcp://mine2.bsty.nonce-pool.com:4095 -u djm34.1 -p password  --gpu-platform 1 -w 32 --thread-concurrency 512 --text-only --debug
+@rem sgminer.exe --no-submit-stale --kernel yescrypt -o stratum+tcp://mine2.bsty.nonce-pool.com:4095 -u djm34.1 -p password  --gpu-platform 1 -w 32 --thread-concurrency 512 --text-only -D
 
+sgminer.exe --no-submit-stale --kernel yescrypt -o stratum+tcp://mine2.bsty.nonce-pool.com:4095 -u djm34.1 -p password  --gpu-platform 0  -w 16 -g 2
 pause

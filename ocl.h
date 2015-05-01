@@ -22,6 +22,9 @@ typedef struct __clState {
   cl_mem outputBuffer;
   cl_mem CLbuffer0;
   cl_mem padbuffer8;
+  cl_mem buffer1;
+  cl_mem buffer2;
+  cl_mem buffer3;
   unsigned char cldata[80];
   bool hasBitAlign;
   bool goffset;
