@@ -58,7 +58,8 @@ const char *algorithm_type_str[] = {
   "Neoscrypt",
   "Lyra2RE",
   "pluck",
-  "yescrypt"
+  "yescrypt",
+  "yescrypt-multi"
 };
 
 void sha256(const unsigned char *message, unsigned int len, unsigned char *digest)
@@ -196,6 +197,8 @@ static cl_int queue_pluck_kernel(_clState *clState, dev_blk_ctx *blk, __maybe_un
 	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
 //	memcpy(clState->cldata, blk->work->data, 80);
 	flip80(clState->cldata, blk->work->data);
+//int i;
+//for (i = 0; i<20; i++) ((uint32_t*)clState->cldata)[i] = ((uint32_t*)blk->work->data)[i]; // don't flip
 	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
 
 	CL_SET_ARG(clState->CLbuffer0);
@@ -215,9 +218,12 @@ static cl_int queue_yescrypt_kernel(_clState *clState, dev_blk_ctx *blk, __maybe
 	cl_int status = 0;
 
 
-	//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
+//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
 	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
-	//	memcpy(clState->cldata, blk->work->data, 80);
+//	le_target = (cl_uint)((uint32_t *)blk->work->target)[7];
+
+
+//	memcpy(clState->cldata, blk->work->data, 80);
 	flip80(clState->cldata, blk->work->data);
 	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
 
@@ -225,6 +231,7 @@ static cl_int queue_yescrypt_kernel(_clState *clState, dev_blk_ctx *blk, __maybe
 	CL_SET_ARG(clState->outputBuffer);
 	CL_SET_ARG(clState->padbuffer8);
 	CL_SET_ARG(clState->buffer1);
+	CL_SET_ARG(clState->buffer2);
 	CL_SET_ARG(le_target);
 
 	return status;
@@ -241,29 +248,54 @@ static cl_int queue_yescrypt_multikernel(_clState *clState, dev_blk_ctx *blk, __
 
 	//	le_target = (*(cl_uint *)(blk->work->device_target + 28));
 	le_target = (cl_uint)le32toh(((uint32_t *)blk->work->/*device_*/target)[7]);
-	//	memcpy(clState->cldata, blk->work->data, 80);
-	flip80(clState->cldata, blk->work->data);
+	memcpy(clState->cldata, blk->work->data, 80);
+//	flip80(clState->cldata, blk->work->data);
 	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
 //pbkdf and initial sha
 	kernel = &clState->kernel;
-	CL_SET_ARG_0(clState->CLbuffer0);
-	CL_SET_ARG(clState->buffer2);
-	CL_SET_ARG(clState->buffer3);
-//mix1_1 (salsa)
-	num = 0;
-	kernel = clState->extra_kernels;
-	CL_SET_ARG_0(clState->buffer1);
-	CL_SET_ARG(clState->buffer2);
-//mix1_2/2_2 (pwxform)
-	CL_NEXTKERNEL_SET_ARG_0(clState->padbuffer8);
+
+	CL_SET_ARG(clState->CLbuffer0);
+	CL_SET_ARG(clState->outputBuffer);
+	CL_SET_ARG(clState->padbuffer8);
 	CL_SET_ARG(clState->buffer1);
 	CL_SET_ARG(clState->buffer2);
+	CL_SET_ARG(clState->buffer3);
+	CL_SET_ARG(le_target);
+
+//inactive kernel
+	num = 0;
+	kernel = clState->extra_kernels;
+	CL_SET_ARG_N(0,clState->buffer1);
+	CL_SET_ARG_N(1,clState->buffer2);
+//	CL_SET_ARG_N(3, clState->buffer3);
+
 //mix2_2
-//	CL_NEXTKERNEL_SET_ARG_0(clState->padbuffer8);
-//	CL_SET_ARG(clState->buffer1);
-//	CL_SET_ARG(clState->buffer2);
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_N(0, clState->padbuffer8);
+	CL_SET_ARG_N(1,clState->buffer1);
+	CL_SET_ARG_N(2,clState->buffer2);
+	//mix2_2
+//inactive kernel
+//	num = 0;
+//	CL_NEXTKERNEL_SET_ARG_N(0, clState->buffer1);
+//	CL_SET_ARG_N(1, clState->buffer2);
+	//mix2_2
+
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_N(0, clState->padbuffer8);
+	CL_SET_ARG_N(1, clState->buffer1);
+	CL_SET_ARG_N(2, clState->buffer2);
+
+	//inactive kernel
+//	num = 0;
+//	CL_NEXTKERNEL_SET_ARG_N(0, clState->buffer1);
+//	CL_SET_ARG_N(1, clState->buffer2);
+	//mix2_2
+
+
 //pbkdf and finalization
-	CL_NEXTKERNEL_SET_ARG_0(clState->CLbuffer0);
+    num=0;
+	CL_NEXTKERNEL_SET_ARG(clState->CLbuffer0);
 	CL_SET_ARG(clState->outputBuffer);
 	CL_SET_ARG(clState->buffer2);
 	CL_SET_ARG(clState->buffer3);
@@ -819,10 +851,10 @@ static algorithm_settings_t algos[] = {
   A_YESCRYPT("yescrypt"),
 #undef A_YESCRYPT
 
-//#define A_YESCRYPT(a) \
-//                  { a, ALGO_YESCRYPT, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 3, -1,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE , yescrypt_regenhash, queue_yescrypt_multikernel, gen_hash, append_neoscrypt_compiler_options}
-//  A_YESCRYPT("yescrypt"),
-//#undef A_YESCRYPT
+#define A_YESCRYPT_MULTI(a) \
+                  { a, ALGO_YESCRYPT_MULTI, "", 1, 65536, 65536, 0, 0, 0xFF, 0xFFFF000000000000ULL, 0x0000ffffUL, 4,-1,CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE , yescrypt_regenhash, queue_yescrypt_multikernel, gen_hash, append_neoscrypt_compiler_options}
+  A_YESCRYPT_MULTI("yescrypt-multi"),
+#undef A_YESCRYPT_MULTI
 
 
   // kernels starting from this will have difficulty calculated by using quarkcoin algorithm

@@ -516,7 +516,8 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
 
 	  applog(LOG_DEBUG, "GPU %d: computing max. global thread count to %u", gpu, (unsigned)(cgpu->thread_concurrency));
    }
-   else if (!safe_cmp(cgpu->algorithm.name, "yescrypt") && !cgpu->opt_tc) {
+  else if ((!safe_cmp(cgpu->algorithm.name, "yescrypt") ||
+            !safe_cmp(algorithm->name, "yescrypt-multi")) && !cgpu->opt_tc) {
 		  size_t glob_thread_count;
 		  long max_int;
 		  unsigned char type = 0;
@@ -702,6 +703,12 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
   }
 
   size_t bufsize;
+  size_t buf1size;
+  size_t buf3size;
+  size_t buf2size;
+
+
+
   size_t readbufsize = 128;
 
   if (algorithm->rw_buffer_size < 0) {
@@ -717,10 +724,12 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
       applog(LOG_DEBUG, "Neoscrypt buffer sizes: %lu RW, %lu R", (unsigned long)bufsize, (unsigned long)readbufsize);
     // scrypt/n-scrypt
     } 
-	else if (!safe_cmp(algorithm->name, "yescrypt")) {
+	else if (!safe_cmp(algorithm->name, "yescrypt") || !safe_cmp(algorithm->name, "yescrypt-multi")) {
 		/* The scratch/pad-buffer needs 32kBytes memory per thread. */
 		bufsize = YESCRYPT_SCRATCHBUF_SIZE * cgpu->thread_concurrency;
-
+		buf1size = PLUCK_SECBUF_SIZE * cgpu->thread_concurrency;
+		buf2size = 128 * 8 * 8 * cgpu->thread_concurrency;
+		buf3size= 8 * 8 * 4 * cgpu->thread_concurrency;
 		/* This is the input buffer. For yescrypt this is guaranteed to be
 		* 80 bytes only. */
 		readbufsize = 80;
@@ -753,6 +762,10 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
   }
 
   clState->padbuffer8 = NULL;
+  clState->buffer1 = NULL;
+  clState->buffer2 = NULL;
+  clState->buffer3 = NULL;
+
 
   if (bufsize > 0) {
     applog(LOG_DEBUG, "Creating read/write buffer sized %lu", (unsigned long)bufsize);
@@ -765,20 +778,20 @@ _clState *initCl(unsigned int gpu, char *name, size_t nameSize, algorithm_t *alg
     }
 
 
-	if (!safe_cmp(algorithm->name, "yescrypt")) {
+	if (!safe_cmp(algorithm->name, "yescrypt") || !safe_cmp(algorithm->name, "yescrypt-multi")) {
 // need additionnal buffers
-		clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, PLUCK_SECBUF_SIZE * cgpu->thread_concurrency, NULL, &status);
+		clState->buffer1 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf1size, NULL, &status);
 		if (status != CL_SUCCESS && !clState->buffer1) {
 			applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer1), decrease TC or increase LG", status);
 			return NULL;}
 
-		clState->buffer2 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, 128 * 8 * 8 * cgpu->thread_concurrency, NULL, &status);
+		clState->buffer2 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf2size, NULL, &status);
 		if (status != CL_SUCCESS && !clState->buffer2) {
 			applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer2), decrease TC or increase LG", status);
 			return NULL;
 		}
 
-		clState->buffer3 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, 8 * 8 * 4 * cgpu->thread_concurrency, NULL, &status);
+		clState->buffer3 = clCreateBuffer(clState->context, CL_MEM_READ_WRITE, buf3size, NULL, &status);
 		if (status != CL_SUCCESS && !clState->buffer3) {
 			applog(LOG_DEBUG, "Error %d: clCreateBuffer (buffer3), decrease TC or increase LG", status);
 			return NULL;

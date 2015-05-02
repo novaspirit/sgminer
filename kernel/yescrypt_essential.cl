@@ -140,6 +140,8 @@ inline uint8 swapvec(uint8 buf)
 	return vec;
 }
 
+
+
 inline uint16 swapvec16(uint16 buf)
 {
 	uint16 vec;
@@ -172,6 +174,18 @@ uint t;
 	uSALSA_CORE(st);
 	return(as_ulong8(st + Bx));
 }
+
+ ulong8 salsa20_8n(uint16 Bx)
+ {
+	 uint t;
+	 uint16 st = Bx;
+	 SALSA_CORE(st);
+	 SALSA_CORE(st);
+	 SALSA_CORE(st);
+	 SALSA_CORE(st);
+	 return(as_ulong8(st + Bx));
+ }
+
 
  ulong16 blockmix_salsa8_small2(ulong16 Bin)
 {
@@ -346,7 +360,7 @@ inline ulong8 block_pwxform_long(ulong8 Bout, __global ulong2 *prevstate)
 
 
 
-inline void blockmix_pwxform( ulong8 *Bin, __global  ulong16 *prevstate)
+inline void blockmix_pwxform(__global ulong8 *Bin, __global  ulong16 *prevstate)
 {
 	Bin[0] ^= Bin[15];
 	Bin[0] = block_pwxform_long_old(Bin[0], prevstate);

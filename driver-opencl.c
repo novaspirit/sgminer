@@ -1431,7 +1431,7 @@ static int64_t opencl_scanhash(struct thr_info *thr, struct work *work,
       status = clEnqueueNDRangeKernel(clState->commandQueue, clState->extra_kernels[i], 1, p_global_work_offset,
                       globalThreads, localThreads, 0,  NULL, NULL);
       if (unlikely(status != CL_SUCCESS)) {
-          applog(LOG_ERR, "Error %d: Enqueueing kernel onto command queue. (clEnqueueNDRangeKernel)", status);
+          applog(LOG_ERR, "Error %d: Enqueueing kernel onto command queue. (clEnqueueNDRangeKernel)  %d", status,i);
           return -1;
       }
   }
@@ -1483,6 +1483,12 @@ static void opencl_thread_shutdown(struct thr_info *thr)
     clFinish(clState->commandQueue);
     clReleaseMemObject(clState->outputBuffer);
     clReleaseMemObject(clState->CLbuffer0);
+	if (clState->buffer1)
+	clReleaseMemObject(clState->buffer1);
+	if (clState->buffer2)
+	clReleaseMemObject(clState->buffer2);
+	if (clState->buffer3)
+	clReleaseMemObject(clState->buffer3);
     if (clState->padbuffer8)
       clReleaseMemObject(clState->padbuffer8);
     clReleaseKernel(clState->kernel);
