@@ -1,5 +1,5 @@
 /*
-* "yescrypt" kernel implementation.
+* "credits" kernel implementation.
 *
 * ==========================(LICENSE BEGIN)============================
 *
