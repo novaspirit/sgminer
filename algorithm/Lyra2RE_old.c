@@ -100,7 +100,7 @@ int lyra2reold_test(unsigned char *pdata, const unsigned char *ptarget, uint32_t
 
 	be32enc_vect(data, (const uint32_t *)pdata, 19);
 	data[19] = htobe32(nonce);
-	lyra2rehash(ohash, data);
+	lyra2rehash_old(ohash, data);
 	tmp_hash7 = be32toh(ohash[7]);
 
 	applog(LOG_DEBUG, "htarget %08lx diff1 %08lx hash %08lx",
@@ -122,7 +122,7 @@ void lyra2reold_regenhash(struct work *work)
 
         be32enc_vect(data, (const uint32_t *)work->data, 19);
         data[19] = htobe32(*nonce);
-        lyra2rehash(ohash, data);
+        lyra2rehash_old(ohash, data);
 }
 
 bool scanhash_lyra2reold(struct thr_info *thr, const unsigned char __maybe_unused *pmidstate,
