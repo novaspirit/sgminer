@@ -1156,8 +1156,8 @@ extern struct pool *add_pool(void);
 extern bool add_pool_details(struct pool *pool, bool live, char *url, char *user, char *pass, char *name, char *desc, char *profile, char *algo);
 
 #define MAX_GPUDEVICES 16
-#define MAX_DEVICES 4096
-
+//#define MAX_DEVICES 4096
+#define MAX_DEVICES 8192
 #define MIN_INTENSITY 4
 #define MIN_INTENSITY_STR "4"
 #define MAX_INTENSITY 31
@@ -1267,6 +1267,7 @@ struct stratum_work {
   size_t cb_len;
   size_t header_len;
   int merkles;
+  double next_diff;
   double diff;
 };
 

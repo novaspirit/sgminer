@@ -258,14 +258,14 @@ char *set_gpu_threads(const char *_arg)
   if (nextptr == NULL)
     return "Invalid parameters for set_gpu_threads";
   val = atoi(nextptr);
-  if (val < 1 || val > 10)
+  if (val < 1 || val > 20) // gpu_threads increase max value to 20
     return "Invalid value passed to set_gpu_threads";
 
   gpus[device++].threads = val;
 
   while ((nextptr = strtok(NULL, ",")) != NULL) {
     val = atoi(nextptr);
-    if (val < 1 || val > 10)
+    if (val < 1 || val > 20) // gpu_threads increase max value to 20
       return "Invalid value passed to set_gpu_threads";
 
     gpus[device++].threads = val;

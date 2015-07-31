@@ -2,7 +2,8 @@
 #define LYRA2RE_H
 
 #include "miner.h"
-
+#define LYRA_SCRATCHBUF_SIZE (4 ) // matrix extended to 16 matrix[16][8][8] uint64_t or equivalent
+#define LYRA_SECBUF_SIZE (4) //8 uint64
 extern int lyra2re_test(unsigned char *pdata, const unsigned char *ptarget,
 			uint32_t nonce);
 extern void lyra2re_regenhash(struct work *work);

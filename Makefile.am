@@ -70,6 +70,7 @@ sgminer_SOURCES += algorithm/whirlcoin.c algorithm/whirlcoin.h
 sgminer_SOURCES += algorithm/neoscrypt.c algorithm/neoscrypt.h
 sgminer_SOURCES += algorithm/pluck.c algorithm/pluck.h
 sgminer_SOURCES += algorithm/credits.c algorithm/credits.h
+sgminer_SOURCES += algorithm/Lyra2RE_old.c algorithm/Lyra2RE_old.h algorithm/Lyra2_old.c algorithm/Lyra2_old.h algorithm/Sponge_old.c algorithm/Sponge_old.h
 sgminer_SOURCES += algorithm/Lyra2RE.c algorithm/Lyra2RE.h algorithm/Lyra2.c algorithm/Lyra2.h algorithm/Sponge.c algorithm/Sponge.h
 sgminer_SOURCES += algorithm/yescrypt.h algorithm/yescrypt.c algorithm/yescrypt_core.h algorithm/yescrypt-opt.c algorithm/yescryptcommon.c algorithm/sysendian.h 
 

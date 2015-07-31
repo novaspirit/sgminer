@@ -2265,7 +2265,12 @@ static bool gbt_decode(struct pool *pool, json_t *res_val)
 
 static bool getwork_decode(json_t *res_val, struct work *work)
 {
-  if (unlikely(!jobj_binary(res_val, "data", work->data, sizeof(work->data), true))) {
+
+	size_t worklen = 128;
+	worklen = ((!safe_cmp(work->pool->algorithm.name, "credits")) ? sizeof(work->data) : worklen);
+
+
+  if (unlikely(!jobj_binary(res_val, "data", work->data, worklen, true))) {
     if (opt_morenotices)
       applog(LOG_ERR, "%s: JSON inval data", isnull(get_pool_name(work->pool), ""));
     return false;
@@ -3030,7 +3035,11 @@ static bool submit_upstream_work(struct work *work, CURL *curl, char *curl_err_s
   }
 
   /* build hex string - Make sure to restrict to 80 bytes for Neoscrypt */
-  hexstr = bin2hex(work->data, ((!safe_cmp(work->pool->algorithm.name, "neoscrypt")) ? 80 : sizeof(work->data)));
+ 
+  int worksize_default = 128;
+  hexstr = bin2hex(work->data, (!safe_cmp(work->pool->algorithm.name, "neoscrypt") ? 80 : worksize_default));
+  hexstr = bin2hex(work->data, (!safe_cmp(work->pool->algorithm.name, "credits") ? sizeof(work->data) : worksize_default));
+
 
   /* build JSON-RPC request */
   if (work->gbt) {

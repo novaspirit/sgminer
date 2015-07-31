@@ -31,7 +31,8 @@
 #include "algorithm/fresh.h"
 #include "algorithm/whirlcoin.h"
 #include "algorithm/neoscrypt.h"
-#include "algorithm/Lyra2RE.h"
+#include "algorithm/Lyra2RE.h"     //lyra new version
+#include "algorithm/Lyra2RE_old.h" //lyra old version
 #include "algorithm/pluck.h"
 #include "algorithm/yescrypt.h"
 #include "algorithm/credits.h"
@@ -59,6 +60,7 @@ const char *algorithm_type_str[] = {
   "Whirlcoin",
   "Neoscrypt",
   "Lyra2RE",
+  "Lyta2REv2"
   "pluck",
   "yescrypt",
   "yescrypt-multi"
@@ -408,6 +410,62 @@ static cl_int queue_lyra2RE_kernel(struct __clState *clState, struct _dev_blk_ct
 
 	return status;
 }
+
+static cl_int queue_lyra2REv2_kernel(struct __clState *clState, struct _dev_blk_ctx *blk, __maybe_unused cl_uint threads)
+{
+	cl_kernel *kernel;
+	unsigned int num;
+	cl_int status = 0;
+	cl_ulong le_target;
+
+	//	le_target = *(cl_uint *)(blk->work->device_target + 28);
+	le_target = *(cl_ulong *)(blk->work->device_target + 24);
+	flip80(clState->cldata, blk->work->data);
+	status = clEnqueueWriteBuffer(clState->commandQueue, clState->CLbuffer0, true, 0, 80, clState->cldata, 0, NULL, NULL);
+
+	// blake - search
+	kernel = &clState->kernel;
+	num = 0;
+	//	CL_SET_ARG(clState->CLbuffer0);
+	CL_SET_ARG(clState->buffer1);
+	CL_SET_ARG(blk->work->blk.ctx_a);
+	CL_SET_ARG(blk->work->blk.ctx_b);
+	CL_SET_ARG(blk->work->blk.ctx_c);
+	CL_SET_ARG(blk->work->blk.ctx_d);
+	CL_SET_ARG(blk->work->blk.ctx_e);
+	CL_SET_ARG(blk->work->blk.ctx_f);
+	CL_SET_ARG(blk->work->blk.ctx_g);
+	CL_SET_ARG(blk->work->blk.ctx_h);
+	CL_SET_ARG(blk->work->blk.cty_a);
+	CL_SET_ARG(blk->work->blk.cty_b);
+	CL_SET_ARG(blk->work->blk.cty_c);
+
+	// keccak - search1
+	kernel = clState->extra_kernels;
+	CL_SET_ARG_0(clState->buffer1);
+	// cubehash - search2 
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_0(clState->buffer1);
+	// lyra - search3
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_N(0, clState->buffer1);
+	CL_SET_ARG_N(1, clState->padbuffer8);
+	// skein -search4 
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_0(clState->buffer1);
+	// cubehash - search5
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG_0(clState->buffer1);
+	// bmw - search6
+	num = 0;
+	CL_NEXTKERNEL_SET_ARG(clState->buffer1);
+	CL_SET_ARG(clState->outputBuffer);
+	CL_SET_ARG(le_target);
+
+	return status;
+}
+
+
 
 
 static cl_int queue_darkcoin_mod_kernel(struct __clState *clState, struct _dev_blk_ctx *blk, __maybe_unused cl_uint threads)
@@ -927,7 +985,10 @@ static algorithm_settings_t algos[] = {
 
   { "fresh", ALGO_FRESH, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4, 4 * 16 * 4194304, 0, fresh_regenhash, queue_fresh_kernel, gen_hash, NULL},
 
-  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2re_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
+  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2reold_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
+
+  { "Lyra2REv2", ALGO_LYRA2REv2, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 6, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, lyra2re_regenhash, queue_lyra2REv2_kernel, gen_hash, append_neoscrypt_compiler_options },
+
 
   // kernels starting from this will have difficulty calculated by using fuguecoin algorithm
 #define A_FUGUE(a, b, c) \
@@ -1035,7 +1096,7 @@ void set_algorithm(algorithm_t* algo, const char* newname_alias)
   // use old nfactor if it was previously set and is different than the one set by alias
   if ((old_nfactor > 0) && (old_nfactor != nfactor))
     nfactor = old_nfactor;
-  if (algo->type == ALGO_LYRA2RE) {opt_lyra = true;}
+  if (algo->type == ALGO_LYRA2RE || algo->type == ALGO_LYRA2REv2 ) { opt_lyra = true; }
   set_algorithm_nfactor(algo, nfactor);
 
   //reapply kernelfile if was set
