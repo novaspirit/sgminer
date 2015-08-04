@@ -60,7 +60,7 @@ const char *algorithm_type_str[] = {
   "Whirlcoin",
   "Neoscrypt",
   "Lyra2RE",
-  "Lyta2REv2"
+  "Lyra2REv2"
   "pluck",
   "yescrypt",
   "yescrypt-multi"
