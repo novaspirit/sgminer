@@ -285,7 +285,7 @@ __kernel void search3(__global uchar* hashes,__global uchar* matrix )
  uint gid = get_global_id(0);
  // __global hash_t *hash = &(hashes[gid-get_global_offset(0)]);
   __global hash_t *hash = (__global hash_t *)(hashes + (4 * sizeof(ulong)* (get_global_id(0) % MAX_GLOBAL_THREADS)));
-  __global ulong4 *DMatrix = (__global ulong4 *)(matrix + (4 * memshift * 4 * 4 * sizeof(ulong)* (get_global_id(0) % MAX_GLOBAL_THREADS)));
+  __global ulong4 *DMatrix = (__global ulong4 *)(matrix + (4 * memshift * 4 * 4 * 8 * (get_global_id(0) % MAX_GLOBAL_THREADS)));
 
 //  uint offset = (4 * memshift * 4 * 4 * sizeof(ulong)* (get_global_id(0) % MAX_GLOBAL_THREADS))/32;
   ulong4 state[4];
