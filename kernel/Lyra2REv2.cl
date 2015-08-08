@@ -45,8 +45,8 @@
 typedef unsigned int sph_u32;
 typedef int sph_s32;
 #ifndef __OPENCL_VERSION__
-typedef unsigned long sph_u64;
-typedef long  sph_s64;
+typedef unsigned long long sph_u64;
+typedef long  long sph_s64;
 #else
 typedef unsigned long sph_u64;
 typedef long sph_s64;
