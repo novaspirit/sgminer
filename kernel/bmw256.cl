@@ -1,3 +1,36 @@
+/*
+* bmw256 kernel implementation.
+*
+* ==========================(LICENSE BEGIN)============================
+* Copyright (c) 2015 djm34
+* 
+*
+* Permission is hereby granted, free of charge, to any person obtaining
+* a copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to
+* permit persons to whom the Software is furnished to do so, subject to
+* the following conditions:
+*
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+* ===========================(LICENSE END)=============================
+*
+* @author   djm34
+*/
+
+
+
 #define shl(x, n)            ((x) << (n))
 #define shr(x, n)            ((x) >> (n))
 //#define SHR(x, n) SHR2(x, n) 
@@ -20,7 +53,7 @@
 #define rs7(x) SPH_ROTL32((x), 27)
 
 /* Message expansion function 1 */
-static uint expand32_1(int i, uint *M32, uint *H, uint *Q)
+uint expand32_1(int i, uint *M32, uint *H, uint *Q)
 {
 
 	return (ss1(Q[i - 16]) + ss2(Q[i - 15]) + ss3(Q[i - 14]) + ss0(Q[i - 13])
@@ -32,7 +65,7 @@ static uint expand32_1(int i, uint *M32, uint *H, uint *Q)
 }
 
 /* Message expansion function 2 */
-static uint expand32_2(int i, uint *M32, uint *H, uint *Q)
+uint expand32_2(int i, uint *M32, uint *H, uint *Q)
 {
 
 	return (Q[i - 16] + rs1(Q[i - 15]) + Q[i - 14] + rs2(Q[i - 13])
@@ -43,7 +76,7 @@ static uint expand32_2(int i, uint *M32, uint *H, uint *Q)
 
 }
 
-static void Compression256(uint *M32, uint *H)
+void Compression256(uint *M32, uint *H)
 {
 
 	int i;
