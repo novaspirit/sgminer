@@ -985,7 +985,7 @@ static algorithm_settings_t algos[] = {
 
   { "fresh", ALGO_FRESH, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4, 4 * 16 * 4194304, 0, fresh_regenhash, queue_fresh_kernel, gen_hash, NULL},
 
-  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2reold_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
+  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 128, 128, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2reold_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
 
   { "Lyra2REv2", ALGO_LYRA2REv2, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 6, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, lyra2re_regenhash, queue_lyra2REv2_kernel, gen_hash, append_neoscrypt_compiler_options },
 
@@ -1071,6 +1071,15 @@ static const char *lookup_algorithm_alias(const char *lookup_alias, uint8_t *nfa
   ALGO_ALIAS("nist5", "talkcoin-mod");
   ALGO_ALIAS("keccak", "maxcoin");
   ALGO_ALIAS("whirlpool", "whirlcoin");
+  ALGO_ALIAS("Lyra2REv2", "Lyra2REv2");
+  ALGO_ALIAS("lyra2rev2", "Lyra2REv2");
+  ALGO_ALIAS("lyra2v2", "Lyra2REv2");
+  ALGO_ALIAS("Lyra2RE", "Lyra2RE");
+  ALGO_ALIAS("lyra2re", "Lyra2RE");
+  ALGO_ALIAS("lyra2", "Lyra2RE");
+
+
+
 
   #undef ALGO_ALIAS
   #undef ALGO_ALIAS_NF
