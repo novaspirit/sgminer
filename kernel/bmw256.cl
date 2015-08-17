@@ -124,10 +124,11 @@ void Compression256(uint *M32, uint *H)
 	/* The parameters are named EXPAND_1_ROUNDS and EXPAND_2_ROUNDS.    */
 	/* The following relation for these parameters should is satisfied: */
 	/* EXPAND_1_ROUNDS + EXPAND_2_ROUNDS = 16                           */
-
+#pragma unroll
 	for (i = 0; i<2; i++)
 		Q[i + 16] = expand32_1(i + 16, M32, H, Q);
 
+#pragma unroll
 	for (i = 2; i<16; i++)
 		Q[i + 16] = expand32_2(i + 16, M32, H, Q);
 
