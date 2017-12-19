@@ -29,7 +29,7 @@
  * @author   djm34
  */
 // typedef unsigned int uint;
-#pragma OPENCL EXTENSION cl_amd_printf : enable
+#pragma OPENCL EXTENSION cl_amd_printf : disable
 
 #ifndef LYRA2RE_CL
 #define LYRA2RE_CL

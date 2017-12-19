@@ -32,7 +32,6 @@
 #include "algorithm/whirlcoin.h"
 #include "algorithm/neoscrypt.h"
 #include "algorithm/Lyra2RE.h"     //lyra new version
-#include "algorithm/Lyra2RE_old.h" //lyra old version
 #include "algorithm/pluck.h"
 #include "algorithm/yescrypt.h"
 #include "algorithm/credits.h"
@@ -984,8 +983,6 @@ static algorithm_settings_t algos[] = {
   { "talkcoin-mod", ALGO_NIST, "", 1, 1, 1, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,  8 * 16 * 4194304, 0, talkcoin_regenhash, queue_talkcoin_mod_kernel, gen_hash, append_x11_compiler_options},
 
   { "fresh", ALGO_FRESH, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4, 4 * 16 * 4194304, 0, fresh_regenhash, queue_fresh_kernel, gen_hash, NULL},
-
-  { "Lyra2RE", ALGO_LYRA2RE, "", 1, 128, 128, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 4,2 * 8 * 4194304 , 0, lyra2reold_regenhash, queue_lyra2RE_kernel, gen_hash, NULL},
 
   { "Lyra2REv2", ALGO_LYRA2REv2, "", 1, 256, 256, 0, 0, 0xFF, 0xFFFFULL, 0x0000ffffUL, 6, -1, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, lyra2re_regenhash, queue_lyra2REv2_kernel, gen_hash, append_neoscrypt_compiler_options },
 
