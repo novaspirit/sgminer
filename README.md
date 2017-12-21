@@ -3,6 +3,7 @@ code modified to compile nicely on SBC such as tinkerboard with MALI GPU.
 
 ## Media
 write up https://www.novaspirit.com/2017/12/21/gpu-mining-on-tinkerboard/
+
 youtube tutorial https://www.youtube.com/watch?v=T9Sb8KaUEdI
 
 ## Introduction
